@@ -5,7 +5,7 @@ import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jd.o2o.db4o.core.Db4oPool;
+import com.jd.o2o.db4o.core.Db4oJdk;
 import com.jd.o2o.db4o.core.Db4oPoolManager;
 import com.jd.o2o.db4o.util.ThreadSleepUtil;
 
@@ -16,7 +16,7 @@ import com.jd.o2o.db4o.util.ThreadSleepUtil;
  * @date 2015年11月26日
  */
 public class IdleCheckHook implements Runnable {
-  private static Logger LOGGER = LoggerFactory.getLogger(Db4oPool.class);
+  private static Logger LOGGER = LoggerFactory.getLogger(Db4oJdk.class);
 
   private final long limitIdleTime;
   private final int initConn;

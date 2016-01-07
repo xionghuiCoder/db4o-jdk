@@ -21,7 +21,7 @@ import com.jd.o2o.db4o.exception.Db4oJdkException;
 
 /**
  * 主从数据库容器
- *
+ * 
  * @author xionghui
  * @email xionghui@jd.com
  * @date 2015年11月27日 上午10:51:58
@@ -38,10 +38,10 @@ class MultipleObjectContainer implements ObjectContainer {
 
   MultipleObjectContainer(ObjectContainerBean masterObjectContainerBean,
       List<ObjectContainerBean> backupObjectContainerList, int reTryTimes) {
-    if (masterObjectContainerBean.db4oDataSource == null
+    if (masterObjectContainerBean == null || masterObjectContainerBean.db4oDataSource == null
         || masterObjectContainerBean.objectContainer == null) {
-      throw new Db4oJdkException(
-          "masterObjectContainerBean is illegal: " + masterObjectContainerBean);
+      throw new Db4oJdkException("masterObjectContainerBean is illegal: "
+          + masterObjectContainerBean);
     }
     this.masterObjectContainerBean = masterObjectContainerBean;
     if (backupObjectContainerList != null) {
@@ -57,18 +57,17 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public void activate(Object obj, int depth) throws Db4oIOException, DatabaseClosedException {
-    Db4oException exception = tryActivate(masterObjectContainerBean, obj, depth);
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryActivate(objectContainerBean, obj, depth);
+    Db4oException exception = this.tryActivate(this.masterObjectContainerBean, obj, depth);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryActivate(objectContainerBean, obj, depth);
     }
     if (exception != null) {
       throw exception;
     }
   }
 
-  private Db4oException tryActivate(ObjectContainerBean objectContainerBean, Object obj,
-      int depth) {
-    int times = reTryTimes;
+  private Db4oException tryActivate(ObjectContainerBean objectContainerBean, Object obj, int depth) {
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -97,17 +96,16 @@ class MultipleObjectContainer implements ObjectContainer {
   @Override
   public boolean close() throws Db4oIOException {
     boolean result = true;
-    if (masterObjectContainerBean.objectContainer != null) {
+    if (this.masterObjectContainerBean.objectContainer != null) {
       try {
-        result = masterObjectContainerBean.objectContainer.close();
+        result = this.masterObjectContainerBean.objectContainer.close();
       } catch (Db4oException e) {
-        LOGGER.error(
-            masterObjectContainerBean.db4oDataSource + " masterObjectContainerBean close error: ",
-            e);
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource
+            + " masterObjectContainerBean close error: ", e);
         result = false;
       }
     }
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
       try {
         backupObjectContainer.close();
@@ -120,20 +118,20 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public void commit() throws Db4oIOException, DatabaseClosedException, DatabaseReadOnlyException {
-    if (masterObjectContainerBean.objectContainer == null) {
-      throw new Db4oIOException(masterObjectContainerBean + " commit() error");
+    if (this.masterObjectContainerBean.objectContainer == null) {
+      throw new Db4oIOException(this.masterObjectContainerBean + " commit() error");
     }
-    Db4oException exception = tryCommit(masterObjectContainerBean);
+    Db4oException exception = this.tryCommit(this.masterObjectContainerBean);
     if (exception != null) {
       throw exception;
     }
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryCommit(objectContainerBean);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryCommit(objectContainerBean);
     }
   }
 
   private Db4oException tryCommit(ObjectContainerBean objectContainerBean) {
-    int times = reTryTimes;
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -153,18 +151,17 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public void deactivate(Object obj, int depth) throws DatabaseClosedException {
-    Db4oException exception = tryDeactivate(masterObjectContainerBean, obj, depth);
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryDeactivate(objectContainerBean, obj, depth);
+    Db4oException exception = this.tryDeactivate(this.masterObjectContainerBean, obj, depth);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryDeactivate(objectContainerBean, obj, depth);
     }
     if (exception != null) {
       throw exception;
     }
   }
 
-  private Db4oException tryDeactivate(ObjectContainerBean objectContainerBean, Object obj,
-      int depth) {
-    int times = reTryTimes;
+  private Db4oException tryDeactivate(ObjectContainerBean objectContainerBean, Object obj, int depth) {
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -191,22 +188,22 @@ class MultipleObjectContainer implements ObjectContainer {
   }
 
   @Override
-  public void delete(Object obj)
-      throws Db4oIOException, DatabaseClosedException, DatabaseReadOnlyException {
-    if (masterObjectContainerBean.objectContainer == null) {
-      throw new Db4oIOException(masterObjectContainerBean + " delete(Object) error");
+  public void delete(Object obj) throws Db4oIOException, DatabaseClosedException,
+      DatabaseReadOnlyException {
+    if (this.masterObjectContainerBean.objectContainer == null) {
+      throw new Db4oIOException(this.masterObjectContainerBean + " delete(Object) error");
     }
-    Db4oException exception = tryDelete(masterObjectContainerBean, obj);
+    Db4oException exception = this.tryDelete(this.masterObjectContainerBean, obj);
     if (exception != null) {
       throw exception;
     }
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryDelete(objectContainerBean, obj);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryDelete(objectContainerBean, obj);
     }
   }
 
   private Db4oException tryDelete(ObjectContainerBean objectContainerBean, Object obj) {
-    int times = reTryTimes;
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -232,30 +229,38 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public ExtObjectContainer ext() {
-    // not supported yet
-    throw new UnsupportedOperationException();
+    if (this.backupObjectContainerList != null && this.backupObjectContainerList.size() > 0) {
+      // not supported yet
+      throw new UnsupportedOperationException();
+    }
+    if (this.masterObjectContainerBean.objectContainer == null) {
+      throw new Db4oIOException(this.masterObjectContainerBean + " ext() error");
+    }
+    ExtObjectContainer extObjectContainer = this.masterObjectContainerBean.objectContainer.ext();
+    return extObjectContainer;
   }
 
   @Override
-  public <T> ObjectSet<T> queryByExample(Object template)
-      throws Db4oIOException, DatabaseClosedException {
+  public <T> ObjectSet<T> queryByExample(Object template) throws Db4oIOException,
+      DatabaseClosedException {
     ObjectSet<T> objSet = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
-      exception = new Db4oIOException(masterObjectContainerBean + " queryByExample(Object) error");
+      exception =
+          new Db4oIOException(this.masterObjectContainerBean + " queryByExample(Object) error");
     } else {
       try {
         objSet = masterObjectContainer.queryByExample(template);
         return objSet;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(masterObjectContainerBean.db4oDataSource + " template: " + template
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " template: " + template
             + " queryByExample error: ", exception);
       }
     }
     // 查从
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
       try {
         objSet = backupObjectContainer.queryByExample(template);
@@ -273,22 +278,22 @@ class MultipleObjectContainer implements ObjectContainer {
     QueryProxy queryProxy = null;
     Query query = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
-      exception = new Db4oIOException(masterObjectContainerBean + " query() error");
+      exception = new Db4oIOException(this.masterObjectContainerBean + " query() error");
     } else {
       try {
         query = masterObjectContainer.query();
-        queryProxy = new QueryProxy(query, backupObjectContainerList);
+        queryProxy = new QueryProxy(query, this.backupObjectContainerList);
         return queryProxy;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(masterObjectContainerBean.db4oDataSource + " query error: ", exception);
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " query error: ", exception);
       }
     }
     // 查从
-    for (int i = 0, size = backupObjectContainerList.size(); i < size; i++) {
-      ObjectContainerBean objectContainerBean = backupObjectContainerList.get(i);
+    for (int i = 0, size = this.backupObjectContainerList.size(); i < size; i++) {
+      ObjectContainerBean objectContainerBean = this.backupObjectContainerList.get(i);
       if (objectContainerBean != null) {
         ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
         try {
@@ -296,7 +301,7 @@ class MultipleObjectContainer implements ObjectContainer {
           List<ObjectContainerBean> partBackupObjectContainerList =
               new ArrayList<ObjectContainerBean>();
           for (int j = i + 1; j < size; j++) {
-            partBackupObjectContainerList.add(backupObjectContainerList.get(j));
+            partBackupObjectContainerList.add(this.backupObjectContainerList.get(j));
           }
           queryProxy = new QueryProxy(query, partBackupObjectContainerList);
           return queryProxy;
@@ -309,26 +314,25 @@ class MultipleObjectContainer implements ObjectContainer {
   }
 
   @Override
-  public <TargetType> ObjectSet<TargetType> query(Class<TargetType> clazz)
-      throws Db4oIOException, DatabaseClosedException {
+  public <TargetType> ObjectSet<TargetType> query(Class<TargetType> clazz) throws Db4oIOException,
+      DatabaseClosedException {
     ObjectSet<TargetType> objectSet = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
-      exception = new Db4oIOException(masterObjectContainerBean + " query(Class) error");
+      exception = new Db4oIOException(this.masterObjectContainerBean + " query(Class) error");
     } else {
       try {
         objectSet = masterObjectContainer.query(clazz);
         return objectSet;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(
-            masterObjectContainerBean.db4oDataSource + " clazz: " + clazz + " query error: ",
-            exception);
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " clazz: " + clazz
+            + " query error: ", exception);
       }
     }
     // 查从
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       if (objectContainerBean != null) {
         ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
         try {
@@ -348,30 +352,29 @@ class MultipleObjectContainer implements ObjectContainer {
       throws Db4oIOException, DatabaseClosedException {
     ObjectSet<TargetType> objectSet = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
-      exception = new Db4oIOException(masterObjectContainerBean + " query(Predicate) error");
+      exception = new Db4oIOException(this.masterObjectContainerBean + " query(Predicate) error");
     } else {
       try {
         objectSet = masterObjectContainer.query(predicate);
         return objectSet;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
             + " query error: ", exception);
       }
     }
     // 查从
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       if (objectContainerBean != null) {
         ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
         try {
           objectSet = backupObjectContainer.query(predicate);
           return objectSet;
         } catch (Db4oException ex) {
-          LOGGER.error(
-              objectContainerBean.db4oDataSource + " predicate: " + predicate + " query error: ",
-              ex);
+          LOGGER.error(objectContainerBean.db4oDataSource + " predicate: " + predicate
+              + " query error: ", ex);
         }
       }
     }
@@ -383,22 +386,23 @@ class MultipleObjectContainer implements ObjectContainer {
       QueryComparator<TargetType> comparator) throws Db4oIOException, DatabaseClosedException {
     ObjectSet<TargetType> objectSet = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
-      exception = new Db4oIOException(
-          masterObjectContainerBean + " query(Predicate, QueryComparator) error");
+      exception =
+          new Db4oIOException(this.masterObjectContainerBean
+              + " query(Predicate, QueryComparator) error");
     } else {
       try {
         objectSet = masterObjectContainer.query(predicate, comparator);
         return objectSet;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
             + " QueryComparator: " + comparator + " query error: ", exception);
       }
     }
     // 查从
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       if (objectContainerBean != null) {
         ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
         try {
@@ -418,22 +422,23 @@ class MultipleObjectContainer implements ObjectContainer {
       Comparator<TargetType> comparator) throws Db4oIOException, DatabaseClosedException {
     ObjectSet<TargetType> objectSet = null;
     Db4oException exception = null;
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
       exception =
-          new Db4oIOException(masterObjectContainerBean + " query(Predicate, Comparator) error");
+          new Db4oIOException(this.masterObjectContainerBean
+              + " query(Predicate, Comparator) error");
     } else {
       try {
         objectSet = masterObjectContainer.query(predicate, comparator);
         return objectSet;
       } catch (Db4oException e) {
         exception = e;
-        LOGGER.error(masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
+        LOGGER.error(this.masterObjectContainerBean.db4oDataSource + " predicate: " + predicate
             + " comparator: " + comparator + " query error: ", exception);
       }
     }
     // 查从
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
       if (objectContainerBean != null) {
         ObjectContainer backupObjectContainer = objectContainerBean.objectContainer;
         try {
@@ -449,11 +454,10 @@ class MultipleObjectContainer implements ObjectContainer {
   }
 
   @Override
-  public void rollback()
-      throws Db4oIOException, DatabaseClosedException, DatabaseReadOnlyException {
-    Db4oException exception = tryRollback(masterObjectContainerBean);
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryRollback(objectContainerBean);
+  public void rollback() throws Db4oIOException, DatabaseClosedException, DatabaseReadOnlyException {
+    Db4oException exception = this.tryRollback(this.masterObjectContainerBean);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryRollback(objectContainerBean);
     }
     if (exception != null) {
       throw exception;
@@ -461,7 +465,7 @@ class MultipleObjectContainer implements ObjectContainer {
   }
 
   private Db4oException tryRollback(ObjectContainerBean objectContainerBean) {
-    int times = reTryTimes;
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -483,20 +487,20 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public void store(Object obj) throws DatabaseClosedException, DatabaseReadOnlyException {
-    if (masterObjectContainerBean.objectContainer == null) {
-      throw new Db4oIOException(masterObjectContainerBean + " store(Object) error");
+    if (this.masterObjectContainerBean.objectContainer == null) {
+      throw new Db4oIOException(this.masterObjectContainerBean + " store(Object) error");
     }
-    Db4oException exception = tryStore(masterObjectContainerBean, obj);
+    Db4oException exception = this.tryStore(this.masterObjectContainerBean, obj);
     if (exception != null) {
       throw exception;
     }
-    for (ObjectContainerBean objectContainerBean : backupObjectContainerList) {
-      tryStore(objectContainerBean, obj);
+    for (ObjectContainerBean objectContainerBean : this.backupObjectContainerList) {
+      this.tryStore(objectContainerBean, obj);
     }
   }
 
   private Db4oException tryStore(ObjectContainerBean objectContainerBean, Object obj) {
-    int times = reTryTimes;
+    int times = this.reTryTimes;
     Db4oException exception = null;
     do {
       try {
@@ -523,9 +527,9 @@ class MultipleObjectContainer implements ObjectContainer {
   /**
    * 只需校验主库连接是否有效
    */
-  void tryMasterObjectContainerCommit()
-      throws Db4oIOException, DatabaseClosedException, DatabaseReadOnlyException {
-    ObjectContainer masterObjectContainer = masterObjectContainerBean.objectContainer;
+  void tryMasterObjectContainerCommit() throws Db4oIOException, DatabaseClosedException,
+      DatabaseReadOnlyException {
+    ObjectContainer masterObjectContainer = this.masterObjectContainerBean.objectContainer;
     if (masterObjectContainer == null) {
       throw new Db4oIOException("masterObjectContainer is null");
     }
@@ -534,14 +538,14 @@ class MultipleObjectContainer implements ObjectContainer {
 
   @Override
   public String toString() {
-    return "MultipleObjectContainer [masterObjectContainerBean=" + masterObjectContainerBean
-        + ", backupObjectContainerList=" + backupObjectContainerList + ", reTryTimes=" + reTryTimes
-        + "]";
+    return "MultipleObjectContainer [masterObjectContainerBean=" + this.masterObjectContainerBean
+        + ", backupObjectContainerList=" + this.backupObjectContainerList + ", reTryTimes="
+        + this.reTryTimes + "]";
   }
 
   /**
    * Db4oDataSource和ObjectContainer信息
-   *
+   * 
    * @author xionghui
    * @email xionghui@jd.com
    * @date 2015年11月26日 下午8:04:31
@@ -557,8 +561,8 @@ class MultipleObjectContainer implements ObjectContainer {
 
     @Override
     public String toString() {
-      return "ObjectContainerBean [db4oDataSource=" + db4oDataSource + ", objectContainer="
-          + objectContainer + "]";
+      return "ObjectContainerBean [db4oDataSource=" + this.db4oDataSource + ", objectContainer="
+          + this.objectContainer + "]";
     }
   }
 }

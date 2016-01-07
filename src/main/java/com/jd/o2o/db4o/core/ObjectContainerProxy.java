@@ -26,7 +26,7 @@ import com.db4o.query.QueryComparator;
 public class ObjectContainerProxy implements ObjectContainer {
   private static Logger LOGGER = LoggerFactory.getLogger(ObjectContainerProxy.class);
 
-  private Db4oPool db4oPool;
+  private Db4oJdk db4oPool;
 
   private Db4oPoolManager manager;
 
@@ -37,7 +37,7 @@ public class ObjectContainerProxy implements ObjectContainer {
   // 标示是否是为未commit或者rollback的数据
   private boolean sign;
 
-  public ObjectContainerProxy(Db4oPool db4oPool, Db4oPoolManager manager,
+  public ObjectContainerProxy(Db4oJdk db4oPool, Db4oPoolManager manager,
       Db4oDataSource db4oDataSource, MultipleObjectContainer multipleObjectContainer) {
     this.db4oPool = db4oPool;
     this.manager = manager;

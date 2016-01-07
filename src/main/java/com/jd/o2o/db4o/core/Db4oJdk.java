@@ -26,13 +26,13 @@ import com.jd.o2o.db4o.util.MD5Util;
 
 /**
  * Db4o连接池，也是Db4o门面，用于初始化db4o的一些配置的连接
- *
+ * 
  * @author xionghui
  * @email xionghui@jd.com
  * @date 2015年11月26日 下午12:41:12
  */
-public class Db4oPool implements IDb4oPool {
-  private static Logger LOGGER = LoggerFactory.getLogger(Db4oPool.class);
+public class Db4oJdk implements IDb4oJdk {
+  private static Logger LOGGER = LoggerFactory.getLogger(Db4oJdk.class);
 
   /**
    * 0:未初始化<br />
@@ -70,6 +70,9 @@ public class Db4oPool implements IDb4oPool {
   // 初始化的连接个数
   private int initConn;
 
+  // 是否使用连接池(设置该选项是为了可以禁用连接池，防止连接太多)
+  private boolean usePool;
+
   // 使用之前测试连接是否可用
   private boolean testBeforeUse;
 
@@ -78,15 +81,15 @@ public class Db4oPool implements IDb4oPool {
 
   /**
    * 大于initConn的空闲连接的回收时间(ms) <br />
-   *
+   * 
    * 零表示立即回收空闲连接 <br />
    * 负数表示不用回收空闲连接 <br />
    * 正数表示回收空闲limitIdleTime(ms)的连接
    */
-  private long limitIdleTime = -1;
+  private long limitIdleTime;
 
   public Db4oDataSource[] getDb4oDataSources() {
-    return db4oDataSources;
+    return this.db4oDataSources;
   }
 
   public void setDb4oDataSources(Db4oDataSource[] db4oDataSources) {
@@ -94,7 +97,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public int[] getWeights() {
-    return weights;
+    return this.weights;
   }
 
   public void setWeights(int[] weights) {
@@ -102,7 +105,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public Db4oDataSource[][] getBackupDb4oDataSources() {
-    return backupDb4oDataSources;
+    return this.backupDb4oDataSources;
   }
 
   public void setBackupDb4oDataSources(Db4oDataSource[][] backupDb4oDataSources) {
@@ -110,7 +113,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public IConfiguration getConfiguration() {
-    return configuration;
+    return this.configuration;
   }
 
   public void setConfiguration(IConfiguration configuration) {
@@ -118,7 +121,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public int getInitConn() {
-    return initConn;
+    return this.initConn;
   }
 
   public void setInitConn(int initConn) {
@@ -128,8 +131,16 @@ public class Db4oPool implements IDb4oPool {
     this.initConn = initConn;
   }
 
+  public boolean isUsePool() {
+    return this.usePool;
+  }
+
+  public void setUsePool(boolean usePool) {
+    this.usePool = usePool;
+  }
+
   public boolean isTestBeforeUse() {
-    return testBeforeUse;
+    return this.testBeforeUse;
   }
 
   public void setTestBeforeUse(boolean testBeforeUse) {
@@ -137,7 +148,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public int getReTryTimes() {
-    return reTryTimes;
+    return this.reTryTimes;
   }
 
   public void setReTryTimes(int reTryTimes) {
@@ -148,7 +159,7 @@ public class Db4oPool implements IDb4oPool {
   }
 
   public long getLimitIdleTime() {
-    return limitIdleTime;
+    return this.limitIdleTime;
   }
 
   public void setLimitIdleTime(long limitIdleTime) {
@@ -160,57 +171,58 @@ public class Db4oPool implements IDb4oPool {
    */
   @Override
   public void init() {
-    if (state != 0) {
+    if (this.state != 0) {
       return;
     }
     long bg = System.currentTimeMillis();
-    lock.lock();
+    this.lock.lock();
     try {
       // double check
-      if (state != 0) {
+      if (this.state != 0) {
         return;
       }
-      if (db4oDataSources == null) {
-        if (configuration != null) {
-          db4oDataSources = configuration.parseDb4oDataSources();
+      if (this.db4oDataSources == null) {
+        if (this.configuration != null) {
+          this.db4oDataSources = this.configuration.parseDb4oDataSources();
         }
-        if (db4oDataSources == null) {
+        if (this.db4oDataSources == null) {
           throw new Db4oConfigException("db4oDataSource is null");
         }
       }
-      for (Db4oDataSource db : db4oDataSources) {
-        db4oDataSourceMap.put(db.getServer(), db);
+      for (Db4oDataSource db : this.db4oDataSources) {
+        this.db4oDataSourceMap.put(db.getServer(), db);
       }
-      if (weights == null && configuration != null) {
-        weights = configuration.parseWeights();
+      if (this.weights == null && this.configuration != null) {
+        this.weights = this.configuration.parseWeights();
       }
-      if (weights != null && db4oDataSources.length != weights.length) {
+      if (this.weights != null && this.db4oDataSources.length != this.weights.length) {
         throw new Db4oConfigException("db4oDataSource and weights are differ");
       }
-      if (backupDb4oDataSources == null && configuration != null) {
-        backupDb4oDataSources = configuration.parseBackupDb4oDataSources();
+      if (this.backupDb4oDataSources == null && this.configuration != null) {
+        this.backupDb4oDataSources = this.configuration.parseBackupDb4oDataSources();
       }
-      if (backupDb4oDataSources != null) {
-        if (db4oDataSources.length != backupDb4oDataSources.length) {
+      if (this.backupDb4oDataSources != null) {
+        if (this.db4oDataSources.length != this.backupDb4oDataSources.length) {
           throw new Db4oConfigException("db4oDataSource and backupDb4oDataSource are differ");
         }
-        for (int i = 0, len = db4oDataSources.length; i < len; i++) {
-          servicebackupServicesMap.put(db4oDataSources[i], backupDb4oDataSources[i]);
+        for (int i = 0, len = this.db4oDataSources.length; i < len; i++) {
+          this.servicebackupServicesMap.put(this.db4oDataSources[i], this.backupDb4oDataSources[i]);
         }
       }
 
       // 初始化一致性桶和pool
-      populateConsistentBuckets();
+      this.populateConsistentBuckets();
 
-      if (limitIdleTime >= 0L) {
-        IdleCheckHook startHook = IdleCheckHook.startHook(limitIdleTime, initConn, manager);
+      if (this.usePool && this.limitIdleTime >= 0L) {
+        IdleCheckHook startHook =
+            IdleCheckHook.startHook(this.limitIdleTime, this.initConn, this.manager);
         startHook.await();
       }
-      state = 1;
+      this.state = 1;
     } catch (InterruptedException e) {
       throw new Db4oJdkException(e);
     } finally {
-      lock.unlock();
+      this.lock.unlock();
     }
     LOGGER.info("Db4oPool inited, cost {}ms", (System.currentTimeMillis() - bg));
   }
@@ -219,19 +231,19 @@ public class Db4oPool implements IDb4oPool {
    * 初始化一致性桶和pool连接池(如果需要的话)
    */
   private void populateConsistentBuckets() {
-    int totalWeight = 0, len = db4oDataSources.length;
-    if (weights == null) {
+    int totalWeight = 0, len = this.db4oDataSources.length;
+    if (this.weights == null) {
       totalWeight = len;
     } else {
-      for (int i = 0; i < weights.length; i++) {
-        totalWeight += weights[i];
+      for (int i = 0; i < this.weights.length; i++) {
+        totalWeight += this.weights[i];
       }
     }
     for (int i = 0; i < len; i++) {
-      String server = db4oDataSources[i].getServer();
+      String server = this.db4oDataSources[i].getServer();
       int weight = 1;
-      if (weights != null) {
-        weight = weights[i];
+      if (this.weights != null) {
+        weight = this.weights[i];
       }
       double factor = Math.floor(((double) (40 * len * weight)) / (double) totalWeight);
       for (long j = 0; j < factor; j++) {
@@ -243,13 +255,16 @@ public class Db4oPool implements IDb4oPool {
                   | ((long) (digest[2 + h * 4] & 0xFF) << 16) //
                   | ((long) (digest[1 + h * 4] & 0xFF) << 8) //
                   | (digest[0 + h * 4] & 0xFF);
-          consistentBuckets.put(k, server);
+          this.consistentBuckets.put(k, server);
         }
       }
-      // 初始化db4o连接池
-      for (int j = 0; j < initConn; j++) {
-        MultipleObjectContainer multipleObjectContainer = createObjectContainer(db4oDataSources[i]);
-        manager.entryPool(db4oDataSources[i], multipleObjectContainer);
+      if (this.usePool) {
+        // 初始化db4o连接池
+        for (int j = 0; j < this.initConn; j++) {
+          MultipleObjectContainer multipleObjectContainer =
+              this.createObjectContainer(this.db4oDataSources[i]);
+          this.manager.entryPool(this.db4oDataSources[i], multipleObjectContainer);
+        }
       }
     }
   }
@@ -264,7 +279,7 @@ public class Db4oPool implements IDb4oPool {
       createSuccess = true;
     }
     List<ObjectContainerBean> backupObjectContainerList = new ArrayList<ObjectContainerBean>();
-    Db4oDataSource[] backupDb4oDataSources = servicebackupServicesMap.get(db4oDataSource);
+    Db4oDataSource[] backupDb4oDataSources = this.servicebackupServicesMap.get(db4oDataSource);
     if (backupDb4oDataSources != null) {
       for (Db4oDataSource backupDb4oDataSource : backupDb4oDataSources) {
         if (backupDb4oDataSource == null) {
@@ -287,26 +302,28 @@ public class Db4oPool implements IDb4oPool {
     }
     ObjectContainerBean masterObjectContainerBean =
         new ObjectContainerBean(db4oDataSource, masterObjectContainer);
-    MultipleObjectContainer multipleObjectContainer = new MultipleObjectContainer(
-        masterObjectContainerBean, backupObjectContainerList, reTryTimes);
-    manager.increment(db4oDataSource);
+    MultipleObjectContainer multipleObjectContainer =
+        new MultipleObjectContainer(masterObjectContainerBean, backupObjectContainerList,
+            this.reTryTimes);
+    this.manager.increment(db4oDataSource);
     return multipleObjectContainer;
   }
 
   @Override
   public ObjectContainer getObjectContainer(String key) {
-    checkState();
-    if (consistentBuckets.size() == 0) {
+    this.checkState();
+    if (this.consistentBuckets.size() == 0) {
       return null;
     }
     ObjectContainer objectContainer = null;
     // 只有一个server的话，直接获取
-    if (consistentBuckets.size() == 4) {
-      objectContainer = getConnection(consistentBuckets.get(consistentBuckets.firstKey()));
+    if (this.consistentBuckets.size() == 4) {
+      objectContainer =
+          this.getConnection(this.consistentBuckets.get(this.consistentBuckets.firstKey()));
       return objectContainer;
     }
-    String server = getBucket(key);
-    objectContainer = getConnection(server);
+    String server = this.getBucket(key);
+    objectContainer = this.getConnection(server);
     return objectContainer;
   }
 
@@ -315,31 +332,34 @@ public class Db4oPool implements IDb4oPool {
    */
   private String getBucket(String key) {
     long hash = MD5Util.md5HashingAlg(key);
-    SortedMap<Long, String> tmap = consistentBuckets.tailMap(hash);
+    SortedMap<Long, String> tmap = this.consistentBuckets.tailMap(hash);
     boolean isEmpty = tmap.isEmpty();
-    Long bucketKey = isEmpty ? consistentBuckets.firstKey() : tmap.firstKey();
-    String server = isEmpty ? consistentBuckets.get(bucketKey) : tmap.get(bucketKey);
+    Long bucketKey = isEmpty ? this.consistentBuckets.firstKey() : tmap.firstKey();
+    String server = isEmpty ? this.consistentBuckets.get(bucketKey) : tmap.get(bucketKey);
     return server;
   }
 
   @Override
   public ObjectContainer getConnection(String server) {
-    checkState();
-    Db4oDataSource db4oDataSource = db4oDataSourceMap.get(server);
+    this.checkState();
+    Db4oDataSource db4oDataSource = this.db4oDataSourceMap.get(server);
     if (db4oDataSource == null) {
       return null;
     }
-    MultipleObjectContainer multipleObjectContainer = manager.exitPool(db4oDataSource);
+    MultipleObjectContainer multipleObjectContainer = null;
+    if (!this.usePool) {
+      multipleObjectContainer = this.createObjectContainer(db4oDataSource);
+      return multipleObjectContainer;
+    }
+    multipleObjectContainer = this.manager.exitPool(db4oDataSource);
     if (multipleObjectContainer == null) {
-      multipleObjectContainer = createObjectContainer(db4oDataSource);
-    } else if (testBeforeUse) {
-      // 校验连接是否可用(只有是旧连接是才需要test)
-      multipleObjectContainer = testObjectContainer(multipleObjectContainer, db4oDataSource);
+      multipleObjectContainer = this.createObjectContainer(db4oDataSource);
+    } else if (this.testBeforeUse) {
+      // 校验连接是否可用(只有是从连接池取出来的连接是才需要test)
+      multipleObjectContainer = this.testObjectContainer(multipleObjectContainer, db4oDataSource);
     }
-    ObjectContainerProxy obProxy = null;
-    if (multipleObjectContainer != null) {
-      obProxy = new ObjectContainerProxy(this, manager, db4oDataSource, multipleObjectContainer);
-    }
+    ObjectContainerProxy obProxy =
+        new ObjectContainerProxy(this, this.manager, db4oDataSource, multipleObjectContainer);
     return obProxy;
   }
 
@@ -359,7 +379,7 @@ public class Db4oPool implements IDb4oPool {
       } catch (Db4oIOException ex) {
         LOGGER.error("close multipleObjectContainer error: ", ex);
       }
-      multipleObjectContainer = createObjectContainer(db4oDataSource);
+      multipleObjectContainer = this.createObjectContainer(db4oDataSource);
     }
     return multipleObjectContainer;
   }
@@ -368,17 +388,17 @@ public class Db4oPool implements IDb4oPool {
    * 检查是否已经初始化完成
    */
   private void checkState() {
-    if (state != 1) {
+    if (this.state != 1) {
       throw new Db4oStateException("db4o pool is not inited");
     }
   }
 
   @Override
   public void shutdown() {
-    if (state != 1) {
+    if (this.state != 1) {
       return;
     }
-    state = -1;
-    manager.shutdown();
+    this.state = -1;
+    this.manager.shutdown();
   }
 }

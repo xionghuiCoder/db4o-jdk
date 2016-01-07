@@ -5,11 +5,12 @@ import java.util.Arrays;
 
 import com.jd.o2o.db4o.configuration.IConfiguration;
 import com.jd.o2o.db4o.core.Db4oDataSource;
+import com.jd.o2o.db4o.core.IDb4oInitConfig;
 import com.jd.o2o.db4o.exception.Db4oConfigException;
 
 /**
  * Db4oPool的一些基本配置
- *
+ * 
  * @author xionghui
  * @email xionghui@jd.com
  * @date 2015年11月26日 下午5:05:43
@@ -26,8 +27,10 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
   private String userName;
   private String passport;
 
+  private IDb4oInitConfig db4oInitConfig;
+
   public String getServers() {
-    return servers;
+    return this.servers;
   }
 
   public void setServers(String servers) {
@@ -35,7 +38,7 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
   }
 
   public String getWeights() {
-    return weights;
+    return this.weights;
   }
 
   public void setWeightStr(String weights) {
@@ -43,7 +46,7 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
   }
 
   public String[] getBackupServers() {
-    return backupServers;
+    return this.backupServers;
   }
 
   public void setBackupServers(String[] backupServers) {
@@ -51,7 +54,7 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
   }
 
   public String getUserName() {
-    return userName;
+    return this.userName;
   }
 
   public void setUserName(String userName) {
@@ -59,11 +62,19 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
   }
 
   public String getPassport() {
-    return passport;
+    return this.passport;
   }
 
   public void setPassport(String passport) {
     this.passport = passport;
+  }
+
+  public IDb4oInitConfig getDb4oInitConfig() {
+    return this.db4oInitConfig;
+  }
+
+  public void setDb4oInitConfig(IDb4oInitConfig db4oInitConfig) {
+    this.db4oInitConfig = db4oInitConfig;
   }
 
   /**
@@ -71,17 +82,18 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
    */
   @Override
   public Db4oDataSource[] parseDb4oDataSources() {
-    if (servers == null) {
+    if (this.servers == null) {
       return null;
     }
-    String[] serverArray = servers.split(SERVER_SPLIT);
+    String[] serverArray = this.servers.split(SERVER_SPLIT);
     Db4oDataSource[] db4oDataSources = new Db4oDataSource[serverArray.length];
     for (int i = 0, len = serverArray.length; i < len; i++) {
       String server = serverArray[i];
       if (server == null) {
         continue;
       }
-      db4oDataSources[i] = new Db4oDataSource(server, userName, passport);
+      db4oDataSources[i] =
+          new Db4oDataSource(server, this.userName, this.passport, this.db4oInitConfig);
     }
     return db4oDataSources;
   }
@@ -91,10 +103,10 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
    */
   @Override
   public int[] parseWeights() {
-    if (weights == null) {
+    if (this.weights == null) {
       return null;
     }
-    String[] weightStrs = weights.split(SERVER_SPLIT);
+    String[] weightStrs = this.weights.split(SERVER_SPLIT);
     int[] weights = new int[weightStrs.length];
     for (int i = 0, len = weightStrs.length; i < len; i++) {
       weights[i] = Integer.parseInt(weightStrs[i]);
@@ -107,13 +119,13 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
    */
   @Override
   public Db4oDataSource[][] parseBackupDb4oDataSources() {
-    if (backupServers == null || backupServers.length == 0) {
+    if (this.backupServers == null || this.backupServers.length == 0) {
       return null;
     }
-    int size = backupServers[0].split(SERVER_SPLIT).length;
+    int size = this.backupServers[0].split(SERVER_SPLIT).length;
     Db4oDataSource[][] backupDb4oDataSourceArray = new Db4oDataSource[size][];
-    for (int i = 0, len = backupServers.length; i < len; i++) {
-      String backupServerStr = backupServers[i];
+    for (int i = 0, len = this.backupServers.length; i < len; i++) {
+      String backupServerStr = this.backupServers[i];
       String[] backupServerArray = backupServerStr.split(SERVER_SPLIT);
       // 检查backupServers长度是否一致
       if (size != backupServerArray.length) {
@@ -124,7 +136,8 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
         if (backupDb4oDataSourceArray[j] == null) {
           backupDb4oDataSourceArray[j] = new Db4oDataSource[len];
         }
-        backupDb4oDataSourceArray[j][i] = new Db4oDataSource(backupServer, userName, passport);
+        backupDb4oDataSourceArray[j][i] =
+            new Db4oDataSource(backupServer, this.userName, this.passport, this.db4oInitConfig);
       }
     }
     return backupDb4oDataSourceArray;
@@ -132,8 +145,8 @@ public class ConfigurationImpl implements IConfiguration, Serializable {
 
   @Override
   public String toString() {
-    return "ConfigurationImpl [servers=" + servers + ", weights=" + weights + ", backupServers="
-        + Arrays.toString(backupServers) + ", userName=" + userName + ", passport=" + passport
-        + "]";
+    return "ConfigurationImpl [servers=" + this.servers + ", weights=" + this.weights
+        + ", backupServers=" + Arrays.toString(this.backupServers) + ", userName=" + this.userName
+        + ", passport=" + this.passport + "]";
   }
 }

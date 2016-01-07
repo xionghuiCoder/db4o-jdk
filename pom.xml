@@ -15,7 +15,7 @@
 		<java.version>1.6</java.version>
 		<javadoc.skip>true</javadoc.skip>
 		<slf4j.api.version>1.7.13</slf4j.api.version>
-		<db4o.version>8.0</db4o.version>
+		<db4o.version>8.0-SNAPSHOT</db4o.version>
 		<junit.version>4.12</junit.version>
 	</properties>
 
@@ -86,7 +86,7 @@
 	<developers>
 		<developer>
 			<name>xionghui</name>
-			<email>xionghui_coder@163.com</email>
+			<email>xionghui@jd.com</email>
 		</developer>
 		<developer>
 			<name>caojunming</name>

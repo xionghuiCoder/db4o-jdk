@@ -9,7 +9,7 @@ import com.db4o.ObjectContainer;
  * @email xionghui@jd.com
  * @date 2015年11月26日 上午11:25:48
  */
-public interface IDb4oPool {
+public interface IDb4oJdk {
 
   public void init();
 

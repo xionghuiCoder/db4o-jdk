@@ -13,13 +13,13 @@ import junit.framework.TestCase;
 
 /**
  * 一致性hash测试
- *
+ * 
  * @author xionghui
  * @email xionghui@jd.com
  * @date 2015年11月27日 上午11:59:33
  */
 public class ConsistencyHashTest extends TestCase {
-  private Db4oPool impl = new Db4oPool();
+  private final Db4oJdk impl = new Db4oJdk();
 
   private final static String USERNAME = "root";
   private final static String PASSPORT = "1";
@@ -34,17 +34,17 @@ public class ConsistencyHashTest extends TestCase {
     String[] ipArray = ips.split(",");
     Db4oDataSource[] db4oDataSources = new Db4oDataSource[ipArray.length];
     for (int i = 0, len = ipArray.length; i < len; i++) {
-      db4oDataSources[i] = new Db4oDataSource(ipArray[i], USERNAME, PASSPORT);
+      db4oDataSources[i] = new Db4oDataSource(ipArray[i], USERNAME, PASSPORT, null);
     }
-    impl.setDb4oDataSources(db4oDataSources);
-    impl.init();
+    this.impl.setDb4oDataSources(db4oDataSources);
+    this.impl.init();
   }
 
   public void testConsistentBuckets() throws Exception {
-    Field field = Db4oPool.class.getDeclaredField("consistentBuckets");
+    Field field = Db4oJdk.class.getDeclaredField("consistentBuckets");
     field.setAccessible(true);
     @SuppressWarnings("unchecked")
-    TreeMap<Long, String> consistentBuckets = (TreeMap<Long, String>) field.get(impl);
+    TreeMap<Long, String> consistentBuckets = (TreeMap<Long, String>) field.get(this.impl);
     System.out.println(consistentBuckets.size() + " " + consistentBuckets);
     System.out.println();
 
@@ -55,12 +55,12 @@ public class ConsistencyHashTest extends TestCase {
     System.out.println(consistentBucketsMap.size() + " " + consistentBucketsMap);
     System.out.println();
 
-    List<String> list = initRandomData();
+    List<String> list = this.initRandomData();
     Map<String, Long> map = new HashMap<String, Long>();
     for (String s : list) {
-      Method method = Db4oPool.class.getDeclaredMethod("getBucket", String.class);
+      Method method = Db4oJdk.class.getDeclaredMethod("getBucket", String.class);
       method.setAccessible(true);
-      String server = (String) method.invoke(impl, s);
+      String server = (String) method.invoke(this.impl, s);
       Long count = map.get(server);
       if (count == null) {
         count = 0L;
